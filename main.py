@@ -1,5 +1,5 @@
 import argparse
-from src.starlib import storesByCity
+from src.starlib import (storesByCity, sendMail)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -7,4 +7,4 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--email", help="correo al que enviar pdf-report")
     args = parser.parse_args()
     #storesByCity(args.ciudad)
-
+    sendMail('sergio.gomis@gmail.com')
