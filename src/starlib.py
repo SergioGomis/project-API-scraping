@@ -9,10 +9,30 @@ from sendgrid.helpers.mail import (
 from dotenv import load_dotenv
 load_dotenv()
 import re
-from fpdf import FPDF 
+from fpdf import FPDF
+import requests
 
 
 ver = FPDF()
+
+def composeMarkers(datos):
+    s = ''
+    for _,row in datos.iterrows():
+        s += '&markers=color:red%7C'+str(row['Latitude'])+','+str(row['Longitude'])
+    return s
+
+def saveImage(url):
+    try:
+        MAPS_API_KEY = os.getenv("MAPS_API_KEY")
+        url = f'{url}&key={MAPS_API_KEY}'
+        r = requests.get(url, allow_redirects=True, stream=True)
+        f = open('./output/temp_map.png', 'wb')
+        f.write(r.content)
+        f.close()
+        return True
+    except:
+        return False
+
 
 def possibleResults(ciudad):
     ds = pd.read_csv("./input/starbucks_updt.csv")
@@ -32,7 +52,7 @@ def storesByCity(ciudad):
     ds = pd.read_csv("./input/starbucks_updt.csv")
 
     #print(ds[ds['City']==ciudad])
-    return ds[ds['City'].str.lower()==ciudad]
+    return ds[ds['City'].str.lower()==ciudad.lower()]
 
 
 def sendMail(correo,ciudad):
@@ -86,50 +106,76 @@ def fit_word(string,cell_w,font_type):
 
 def createPDF(datos,ciudad):
     try:
+        # url de imagen con el mapa
+        puntos = composeMarkers(datos)
+        baseURL = 'https://maps.googleapis.com/maps/api/staticmap?size=600x300&maptype=roadmap'
+        
+
         # Create FPDF object
         # FPDF(orientation, unit, format)
         pdf = FPDF('L','mm','A4')
+        #210 x 297 mm P
+        #297 x 210 mm L
 
         pdf.add_page()
         #df = pd.DataFrame(data)
+        pdf.image('./src/starbucks-logo-small.png', 250, 10, link='https://www.starbucks.com/')
 
         # Defining parameters
         num_col = len(datos.columns)
-        w,h=190,277
+        w,h=277,190
         font_type = ('Arial', 'B', 16)
         pdf.set_font(*font_type)
         pdf.set_text_color(0)
         pdf.set_draw_color(0)
 
         # Title
-        pdf.cell(w,10,'Datos Personales',1,1,'C')
+        pdf.cell(w,50,'',0,1,'C')
+        pdf.cell(w,10,f'Stores from {ciudad}',1,1,'C')
 
         # Column names
-        pdf.set_line_width(0.2)
-        for col in datos.columns:
-            pdf.cell(w/num_col,10,col,1,0,'C')
+        pdf.set_line_width(0.1)
+        #for col in datos.columns:
+        #    pdf.cell(w/num_col,10,col,1,0,'C')
+        pdf.cell(27,10,'Brand',1,0,'C')
+        pdf.cell(34,10,'#',1,0,'C')
+        pdf.cell(44,10,'Name',1,0,'C')
+        pdf.cell(54,10,'Address',1,0,'C')
+        pdf.cell(34,10,'City',1,0,'C')
+        pdf.cell(25,10,'Lat.',1,0,'C')
+        pdf.cell(25,10,'Long.',1,0,'C')
+        pdf.cell(34,10,'Country',1,0,'C')
         pdf.ln()
 
+
         # Data
-        pdf.set_fill_color(243,95,95)
+        pdf.set_fill_color(121, 181, 161)
         font_type = ('Arial', '', 12)
         pdf.set_font(*font_type)
         # iteration rows
         for _,row in datos.iterrows():
-            # Adding conditional
-            #fill = 0
-            #if row["country"] in european_countries:
-            #    fill = 1
+            pdf.cell(27,10,fit_word(str(row['Brand']),27,font_type),1,0,'C',1)
+            pdf.cell(34,10,fit_word(str(row['Store Number']),34,font_type),1,0,'C',1)
+            pdf.cell(44,10,fit_word(str(row['Store Name']),44,font_type),1,0,'C',1)
+            pdf.cell(54,10,fit_word(str(row['Street Address']),54,font_type),1,0,'C',1)
+            pdf.cell(34,10,fit_word(str(row['City']),34,font_type),1,0,'C',1)
+            pdf.cell(25,10,fit_word(str(row['Latitude']),25,font_type),1,0,'C',1)
+            pdf.cell(25,10,fit_word(str(row['Longitude']),25,font_type),1,0,'C',1)
+            pdf.cell(34,10,fit_word(str(row['pais']),34,font_type),1,0,'C',1)
             # iterating columns
-            for value in datos.columns:
-                pdf.cell(w/num_col,10,fit_word(str(row[value]),w/num_col,font_type),1,0,'C',1)
+            #for value in datos.columns:
+            #    pdf.cell(w/num_col,10,fit_word(str(row[value]),w/num_col,font_type),1,0,'C',1)
             pdf.ln()
-            
+        if(saveImage(f'{baseURL}{puntos}')):
+            pdf.add_page()
+            #df = pd.DataFrame(data)
+
+            pdf.image('./src/starbucks-logo-small.png', 250, 10, link='https://www.starbucks.com/')
+            MAPS_API_KEY = os.getenv("MAPS_API_KEY")
+            pdf.image('./output/temp_map.png', 10, 60, link=f'{baseURL}{puntos}&key={MAPS_API_KEY}')
+
         # Exporting file
-        #numfile = int(os.getenv("PDFNAME"),base=16)
-        #print(numfile)
         pdf.output('./output/stores_from_{}.pdf'.format(ciudad),'F')
-        #os.environ['PDFNAME'] = str(numfile+1)
         return True
     except:
         return False
