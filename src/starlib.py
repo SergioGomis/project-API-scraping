@@ -17,11 +17,13 @@ ver = FPDF()
 
 def showStats():
     ds = pd.read_csv("./input/starbucks_updt.csv")
-    print(ds.describe())
-    # Total stores
-    # Stores by hemisfere
-    # Stores by meridian
+    # print(ds.describe())
+    print('==== STATS ====')
+    print('- El dataset contiene '+str(len(ds))+' tiendas')
+    print('- De las cuales el '+str(int(len(ds[ds['Latitude']>0])*100/len(ds)))+'% están ubicadas en el hemisferio norte.')
+    print('- Y están en Estados Unidos el '+str(int(len(ds[ds['Pais']=='United States'])*100/len(ds)))+'% del total.')
     # Top 10 countries
+    print('\n')
 
 
 
@@ -197,7 +199,6 @@ def createPDF(datos,ciudad):
             #df = pd.DataFrame(data)
 
             pdf.image('./src/starbucks-logo-small.png', 250, 10, link='https://www.starbucks.com/')
-            MAPS_API_KEY = os.getenv("MAPS_API_KEY")
             pdf.image('./output/temp_map.png', 10, 60)
 
         # Exporting file
