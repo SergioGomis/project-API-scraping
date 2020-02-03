@@ -15,10 +15,21 @@ import requests
 
 ver = FPDF()
 
+def showStats():
+    ds = pd.read_csv("./input/starbucks_updt.csv")
+    print(ds.describe())
+    # Total stores
+    # Stores by hemisfere
+    # Stores by meridian
+    # Top 10 countries
+
+
+
+
 def composeMarkers(datos):
     s = ''
     for _,row in datos.iterrows():
-        s += '&markers=color:red%7C'+str(row['Latitude'])+','+str(row['Longitude'])
+        s += '&markers=color:green%7C'+str(row['Latitude'])+','+str(row['Longitude'])
     return s
 
 def saveImage(url):
@@ -50,9 +61,24 @@ def possibleResults(ciudad):
 
 def storesByCity(ciudad):
     ds = pd.read_csv("./input/starbucks_updt.csv")
-
+    salida = ds[ds['City'].str.lower()==ciudad.lower()]
+    if not salida.empty:
+        paises = salida.groupby(['Pais'])['Pais'].unique().shape[0]
+        if paises > 1:
+            print('Hay varios posibles países para esta ciudad:')
+            lista = [a for a in ds[ds['City'].str.lower()==ciudad.lower()].groupby(['Pais'])['Pais'].unique().keys()]
+            for a in range(len(lista)):
+                print('['+str(a)+'] '+lista[a])
+            while True:
+                try:
+                    pais_elegido = int(input('Introduce el numero del cual quieres los datos: '))
+                    if(pais_elegido in range(paises)):
+                        break
+                except:
+                    print('Valor no válido')
+            salida = ds[(ds['City'].str.lower()==ciudad.lower()) & (ds['Pais']==lista[pais_elegido])]
     #print(ds[ds['City']==ciudad])
-    return ds[ds['City'].str.lower()==ciudad.lower()]
+    return salida
 
 
 def sendMail(correo,ciudad):
@@ -108,7 +134,7 @@ def createPDF(datos,ciudad):
     try:
         # url de imagen con el mapa
         puntos = composeMarkers(datos)
-        baseURL = 'https://maps.googleapis.com/maps/api/staticmap?size=600x300&maptype=roadmap'
+        baseURL = 'https://maps.googleapis.com/maps/api/staticmap?size=750x350&maptype=roadmap'
         
 
         # Create FPDF object
@@ -161,7 +187,7 @@ def createPDF(datos,ciudad):
             pdf.cell(34,10,fit_word(str(row['City']),34,font_type),1,0,'C',1)
             pdf.cell(25,10,fit_word(str(row['Latitude']),25,font_type),1,0,'C',1)
             pdf.cell(25,10,fit_word(str(row['Longitude']),25,font_type),1,0,'C',1)
-            pdf.cell(34,10,fit_word(str(row['pais']),34,font_type),1,0,'C',1)
+            pdf.cell(34,10,fit_word(str(row['Pais']),34,font_type),1,0,'C',1)
             # iterating columns
             #for value in datos.columns:
             #    pdf.cell(w/num_col,10,fit_word(str(row[value]),w/num_col,font_type),1,0,'C',1)
@@ -172,7 +198,7 @@ def createPDF(datos,ciudad):
 
             pdf.image('./src/starbucks-logo-small.png', 250, 10, link='https://www.starbucks.com/')
             MAPS_API_KEY = os.getenv("MAPS_API_KEY")
-            pdf.image('./output/temp_map.png', 10, 60, link=f'{baseURL}{puntos}&key={MAPS_API_KEY}')
+            pdf.image('./output/temp_map.png', 10, 60)
 
         # Exporting file
         pdf.output('./output/stores_from_{}.pdf'.format(ciudad),'F')

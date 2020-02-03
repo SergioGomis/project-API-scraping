@@ -1,2 +1,5 @@
 .env
 stores_from_*.pdf
+pycache
+checkpoints
+temp_map.png
