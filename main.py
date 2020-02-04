@@ -1,5 +1,7 @@
 import argparse
-from src.starlib import (storesByCity, sendMail, createPDF, possibleResults, saveImage, composeMarkers, showStats)
+from src.starlib import (storesByCity, possibleResults, showStats)
+from src.starmail import (sendMail)
+from src.starpdf import (createPDF)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
