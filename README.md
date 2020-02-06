@@ -40,3 +40,4 @@ python3 main.py -email user@domain.com -s Alicante
 ```bash
 python3 main.py -email user@domain.com Madrid
 ```
+Sample output files are available at the /output folder
